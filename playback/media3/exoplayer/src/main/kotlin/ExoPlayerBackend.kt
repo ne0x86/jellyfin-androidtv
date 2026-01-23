@@ -97,6 +97,7 @@ class ExoPlayerBackend(
 			.setMediaSourceFactory(mediaSourceFactory)
 			.setAudioAttributes(AudioAttributes.Builder().apply {
 				setUsage(C.USAGE_MEDIA)
+				setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
 			}.build(), true)
 			.setPauseAtEndOfMediaItems(true)
 			.build()
