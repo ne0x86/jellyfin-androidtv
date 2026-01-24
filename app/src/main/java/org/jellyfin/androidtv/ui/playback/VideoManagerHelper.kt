@@ -25,10 +25,18 @@ fun getSubtitleMediaStreamCodec(stream: MediaStream): String {
 
 private var audioEffect: AudioEffect? = null
 
-fun applyAudioNightmode(audioSessionId: Int) {
+fun applyAudioNightmode(audioSessionId: Int, enabled: Boolean) {
+	if (!enabled) {
+		Timber.i("Disabling audio night mode for session $audioSessionId")
+		audioEffect?.release()
+		audioEffect = null
+		return
+	}
+
 	Timber.i("Enabling audio night mode for session $audioSessionId")
 
 	audioEffect?.release()
+	audioEffect = null
 
 	audioEffect = when {
 		// Use dynamics processinc on Android 9 (API 28) and newer
@@ -54,7 +62,7 @@ fun applyAudioNightmode(audioSessionId: Int) {
 				getBand(4).gain = 0f
 			})
 
-			enabled = true
+			setEnabled(true)
 		}
 
 		// Use more simple equalizer implementation on older versions
@@ -64,7 +72,7 @@ fun applyAudioNightmode(audioSessionId: Int) {
 			setBandLevel(2, 3)
 			setBandLevel(3, 2)
 			setBandLevel(4, 0)
-			enabled = true
+			setEnabled(true)
 		}
 	}
 }

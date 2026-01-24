@@ -94,14 +94,12 @@ public class VideoManager {
         }
 
         // Volume normalisation (audio night mode).
-        if (nightModeEnabled) {
-            mExoPlayer.addAnalyticsListener(new AnalyticsListener() {
-                @Override
-                public void onAudioSessionIdChanged(AnalyticsListener.EventTime eventTime, int audioSessionId) {
-                    VideoManagerHelperKt.applyAudioNightmode(audioSessionId);
-                }
-            });
-        }
+        mExoPlayer.addAnalyticsListener(new AnalyticsListener() {
+            @Override
+            public void onAudioSessionIdChanged(AnalyticsListener.EventTime eventTime, int audioSessionId) {
+                VideoManagerHelperKt.applyAudioNightmode(audioSessionId, nightModeEnabled);
+            }
+        });
 
         mExoPlayerView = view.findViewById(R.id.exoPlayerView);
         mExoPlayerView.setPlayer(mExoPlayer);
