@@ -5,6 +5,8 @@ import timber.log.Timber
 
 class ExoPlayerAudioPipeline {
 	private var loudnessEnhancer: LoudnessEnhancer? = null
+	private var audioSessionId: Int? = null
+
 	var normalizationGain: Float? = null
 		set(value) {
 			Timber.d("Normalization gain changed to $value")
@@ -14,31 +16,51 @@ class ExoPlayerAudioPipeline {
 
 	fun setAudioSessionId(audioSessionId: Int) {
 		Timber.d("Audio session id changed to $audioSessionId")
+		this.audioSessionId = audioSessionId
 
-		// Re-create loudness enhancer for normalization gain
+		// Release any existing enhancer
 		loudnessEnhancer?.release()
+		loudnessEnhancer = null
+		
+		// Apply gain if we have a value and a session
+		if (normalizationGain != null) {
+			createLoudnessEnhancer(audioSessionId)
+			applyGain()
+		}
+	}
+
+	private fun createLoudnessEnhancer(audioSessionId: Int) {
 		loudnessEnhancer = runCatching { LoudnessEnhancer(audioSessionId) }
 			.onFailure { Timber.w(it, "Failed to create LoudnessEnhancer") }
 			.getOrNull()
-
-		// Re-apply current normalization gain
-		applyGain()
 	}
 
 	private fun applyGain() {
-		if (loudnessEnhancer == null) {
-			Timber.d("LoudnessEnhancer is not initialized")
+		val gain = normalizationGain
+		if (gain == null) {
+			loudnessEnhancer?.release()
+			loudnessEnhancer = null
 			return
 		}
 
-		val targetGain = normalizationGain
-			// Convert to millibels
-			?.times(100f)
-			// Round to integer
-			?.toInt()
+		if (loudnessEnhancer == null) {
+			val sessionId = audioSessionId
+			if (sessionId != null) {
+				createLoudnessEnhancer(sessionId)
+			}
+		}
+
+		if (loudnessEnhancer == null) {
+			Timber.d("LoudnessEnhancer not initialized yet (missing sessionId or creation failed)")
+			return
+		}
+
+		val targetGain = gain
+			.times(100f)
+			.toInt()
 
 		Timber.d("Applying gain (targetGain=$targetGain)")
-		loudnessEnhancer?.setEnabled(targetGain != null)
-		loudnessEnhancer?.setTargetGain(targetGain ?: 0)
+		loudnessEnhancer?.enabled = true
+		loudnessEnhancer?.setTargetGain(targetGain)
 	}
 }
